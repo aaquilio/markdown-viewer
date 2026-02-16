@@ -180,9 +180,19 @@ class MarkdownRenderer {
             <!-- Highlight.js library and initialization -->
             <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
             <script>
-                // Automatically highlight all code blocks
                 document.addEventListener('DOMContentLoaded', function() {
                     hljs.highlightAll();
+
+                    // Generate GitHub-style heading IDs for anchor navigation
+                    document.querySelectorAll('h1,h2,h3,h4,h5,h6').forEach(function(h) {
+                        if (!h.id) {
+                            h.id = h.textContent
+                                .toLowerCase()
+                                .replace(/[^\\w\\s-]/g, '')
+                                .trim()
+                                .replace(/\\s+/g, '-');
+                        }
+                    });
                 });
             </script>
         </body>
