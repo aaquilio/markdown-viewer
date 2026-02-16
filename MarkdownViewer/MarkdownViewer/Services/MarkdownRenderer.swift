@@ -6,15 +6,13 @@
 //
 
 import Foundation
-import Down
 
 class MarkdownRenderer {
-    /// Converts markdown text to HTML with syntax highlighting
+    /// Converts markdown text to styled HTML rendered by marked.js (full GFM support)
     static func render(markdown: String) throws -> String {
-        let down = Down(markdownString: markdown)
-
-        // Convert markdown to HTML
-        let html = try down.toHTML()
+        // JSON-encode the raw markdown for safe embedding in a JS string literal
+        let jsonData = try JSONEncoder().encode(markdown)
+        let jsMarkdown = String(data: jsonData, encoding: .utf8) ?? "\"\""
 
         // Wrap in a styled HTML document
         return """
@@ -175,12 +173,15 @@ class MarkdownRenderer {
             </style>
         </head>
         <body>
-            \(html)
+            <div id="content"></div>
 
-            <!-- Highlight.js library and initialization -->
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
             <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
             <script>
                 document.addEventListener('DOMContentLoaded', function() {
+                    marked.use({ gfm: true });
+                    document.getElementById('content').innerHTML = marked.parse(\(jsMarkdown));
+
                     hljs.highlightAll();
 
                     // Generate GitHub-style heading IDs for anchor navigation
