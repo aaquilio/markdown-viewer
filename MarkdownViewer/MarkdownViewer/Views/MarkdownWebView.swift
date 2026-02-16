@@ -48,6 +48,38 @@ struct MarkdownWebView: NSViewRepresentable {
             // Notify that web view is ready
             onWebViewReady?(webView)
         }
+
+        func webView(
+            _ webView: WKWebView,
+            decidePolicyFor navigationAction: WKNavigationAction,
+            decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
+        ) {
+            guard navigationAction.navigationType == .linkActivated,
+                  let url = navigationAction.request.url
+            else {
+                decisionHandler(.allow)
+                return
+            }
+
+            // Anchor link within the document.
+            // Down percent-encodes '#' in hrefs, so the URL may arrive as
+            // about:blank%23fragment (no real URL fragment) rather than about:blank#fragment.
+            if url.scheme == "about" {
+                let fragment = url.fragment
+                    ?? url.absoluteString.components(separatedBy: "%23").dropFirst().joined(separator: "%23")
+                if !fragment.isEmpty {
+                    let safe = fragment.replacingOccurrences(of: "'", with: "\\'")
+                    let js = "document.getElementById('\(safe)')?.scrollIntoView({behavior:'smooth'});"
+                    webView.evaluateJavaScript(js, completionHandler: nil)
+                }
+                decisionHandler(.cancel)
+                return
+            }
+
+            // External link — open in system browser
+            NSWorkspace.shared.open(url)
+            decisionHandler(.cancel)
+        }
     }
 }
 
